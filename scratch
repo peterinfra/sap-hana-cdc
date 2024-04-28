@@ -1,0 +1,50 @@
+# Steps to start SAP HANA Express Edition
+Edit the /etc/sysctl.conf to add the following lines
+fs.file-max=20000000
+fs.aio-max-nr=262144
+vm.memory_failure_early_kill=1
+vm.max_map_count=135217728
+net.ipv4.ip_local_port_range=40000 60999
+
+# Create the data directory
+mkdir -p data/mydata
+chown 12000:79 /data/mydirectory
+
+cd data/mydata/
+touch credentials.json
+# Add the following contents to it. 
+{
+"master_password" : "HXEHana1"
+}
+sudo chown 12000:79 credentials.json
+
+
+# Run the container
+docker run -p 39013:39013 -p 39017:39017 -p 39041-39045:39041-39045 -p 1128-1129:1128-1129 -p 59013-59014:59013-59014 -v $PWD/data/mydata:/hana/mounts \
+--name express-edition \
+saplabs/hanaexpress:latest \
+--passwords-url file:///hana/mounts/credentials.json \
+--agree-to-sap-license
+
+# Exec to the docker container and create the Person1 table in HXE tenant database
+docker exec -it express-edition bash
+hdbsql -i 90 -d HXE -u SYSTEM -p HXEHana1
+
+# Add some data to SAP HANA
+CREATE TABLE Persons1 (PersonID int, LastName varchar(255), FirstName varchar(255));
+INSERT INTO Persons1 VALUES (1, 'Modi', 'Narendra');
+INSERT INTO Persons1 VALUES (2, 'Gandhi ', 'Rahul');
+INSERT INTO Persons1 VALUES (3, 'Shah', 'Amit');
+INSERT INTO Persons1 VALUES (4, 'Singh', 'Rajnath');
+INSERT INTO Persons1 VALUES (5, 'Sitaraman', 'Nirmala');
+
+# Check if the connectors are working 
+curl http://localhost:8083/
+curl http://localhost:8083/connectors
+
+# Add the source and sink connectors
+curl -X POST -H 'content-type:application/json' -d @connect-hana-source.json http://localhost:8083/connectors
+curl -X POST -H 'content-type:application/json' -d @connect-hana-sink.json http://localhost:8083/connectors
+
+# check kafka
+bin/kafka-console-consumer.sh --bootstrap-server  localhost:9092 --topic test_topic_1 --from-beginning

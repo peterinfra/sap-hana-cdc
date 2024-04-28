@@ -1,0 +1,14 @@
+{
+    "connector.class": "MySqlSink",
+    "name": "MySqlSinkConnector_0",
+    "topics": "test_topic_1",
+    "connection.host": "localhost",
+    "connection.port": "3306",
+    "connection.user": "root",
+    "connection.password": "password",
+    "db.name": "test",
+    "insert.mode": "INSERT",
+    "auto.create": "true",
+    "auto.evolve": "true",
+    "tasks.max": "1"
+  }
